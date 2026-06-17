@@ -3038,27 +3038,35 @@ where
         v *= line.width_left.midpoint(line.width_right);
         p0 -= v;
         p1 += v;
+        let width = line.width_left + line.width_right;
+        let dist = (p1 - p0).magnitude() / width;
 
+        //create quad vertices of line segment
         let v0 = MVertex2DLine {
             pos_2d: p0 - n * line.width_left,
             color,
-            line_dash: line.dash0,
+            line_length: 0.0,
+            dash_idx: 1,
         };
         let v1 = MVertex2DLine {
             pos_2d: p0 + n * line.width_right,
             color,
-            line_dash: line.dash0,
+            line_length: 0.0,
+            dash_idx: 1,
         };
         let v2 = MVertex2DLine {
             pos_2d: p1 + n * line.width_right,
             color,
-            line_dash: line.dash1,
+            line_length: dist,
+            dash_idx: 1,
         };
         let v3 = MVertex2DLine {
             pos_2d: p1 - n * line.width_left,
             color,
-            line_dash: line.dash1,
+            line_length: dist,
+            dash_idx: 1,
         };
+        //add quad vertices indexed as triangles
         vs.extend_from_slice(&[v0, v1, v2, v0, v2, v3]);
     }
 }

@@ -2897,6 +2897,9 @@ impl GlobalContext {
             tex: 0,
             texturize: 0,
             notex_color: Rgba::new(0.75, 0.75, 0.75, 1.0),
+            dash_arrays: [
+                4.0, 2.0, 1.0, 2.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+            ],
         };
 
         unsafe {

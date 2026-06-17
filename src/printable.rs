@@ -869,6 +869,10 @@ impl GlobalContext {
                     tex: 0,
                     texturize,
                     notex_color: Rgba::new(1.0, 1.0, 1.0, 1.0),
+                    dash_arrays: [
+                        4.0, 2.0, 1.0, 2.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                        0.0,
+                    ],
                 };
 
                 // Draw the texts
