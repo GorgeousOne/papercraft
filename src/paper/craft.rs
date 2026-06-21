@@ -135,6 +135,9 @@ fn default_fold_line_color() -> MyColor {
 fn default_fold_line_width() -> f32 {
     0.1
 }
+fn default_fold_line_dash() -> Vec<f32> {
+    vec![4.0, 2.0]
+}
 
 fn default_cut_line_color() -> MyColor {
     MyColor(Color::BLACK)
@@ -142,12 +145,18 @@ fn default_cut_line_color() -> MyColor {
 fn default_cut_line_width() -> f32 {
     0.1
 }
+fn default_cut_line_dash() -> Vec<f32> {
+    vec![1.0]
+}
 
 fn default_tab_line_color() -> MyColor {
     MyColor(Color::BLACK)
 }
 fn default_tab_line_width() -> f32 {
     0.2
+}
+fn default_tab_line_dash() -> Vec<f32> {
+    vec![8.0, 4.0]
 }
 
 fn default_hidden_line_angle() -> f32 {
@@ -178,6 +187,7 @@ fn default_line3d_normal() -> LineConfig {
     LineConfig {
         thick: 1.0,
         color: Color::BLACK,
+        dashes: vec![1.0],
     }
 }
 
@@ -185,6 +195,7 @@ fn default_line3d_rim() -> LineConfig {
     LineConfig {
         thick: 1.0,
         color: Color::YELLOW,
+        dashes: vec![1.0],
     }
 }
 
@@ -192,6 +203,7 @@ fn default_line3d_rim_tab() -> LineConfig {
     LineConfig {
         thick: 5.0,
         color: Color::new(0.75, 0.75, 0.0, 1.0),
+        dashes: vec![1.0],
     }
 }
 
@@ -199,6 +211,7 @@ fn default_line3d_cut() -> LineConfig {
     LineConfig {
         thick: 3.0,
         color: Color::WHITE,
+        dashes: vec![1.0],
     }
 }
 
@@ -215,6 +228,7 @@ impl MyColor {
 pub struct LineConfig {
     pub thick: f32,
     pub color: Color,
+    pub dashes: Vec<f32>,
 }
 
 impl LineConfig {
@@ -255,19 +269,29 @@ pub struct PaperOptions {
     pub fold_line_len: f32, //only for folds in & out
     #[serde(default, rename = "shadow_tab_alpha")]
     pub shadow_flap_alpha: f32, //0.0 - 1.0
+
     // Do not use LineConfig for compatibility with older models
     #[serde(default = "default_fold_line_color")]
     pub fold_line_color: MyColor,
     #[serde(default = "default_fold_line_width")]
     pub fold_line_width: f32, //only for folds in & out
+    #[serde(default = "default_fold_line_dash")]
+    pub fold_line_dash: Vec<f32>,
+
     #[serde(default = "default_cut_line_color")]
     pub cut_line_color: MyColor,
     #[serde(default = "default_cut_line_width")]
     pub cut_line_width: f32, //for cuts without tab
+    #[serde(default = "default_cut_line_dash")]
+    pub cut_line_dash: Vec<f32>,
+
     #[serde(default = "default_tab_line_color")]
     pub tab_line_color: MyColor,
     #[serde(default = "default_tab_line_width")]
     pub tab_line_width: f32, //for cuts with tab
+    #[serde(default = "default_tab_line_dash")]
+    pub tab_line_dash: Vec<f32>,
+
     #[serde(default = "default_hidden_line_angle")]
     pub hidden_line_angle: f32, //degrees
     #[serde(default = "my_true")]
@@ -316,12 +340,19 @@ impl Default for PaperOptions {
             flap_angle: 45.0,
             fold_line_len: 4.0,
             shadow_flap_alpha: 0.0,
+
             fold_line_color: default_fold_line_color(),
             fold_line_width: default_fold_line_width(),
+            fold_line_dash: default_fold_line_dash(),
+
             cut_line_color: default_cut_line_color(),
             cut_line_width: default_cut_line_width(),
+            cut_line_dash: default_cut_line_dash(),
+
             tab_line_color: default_tab_line_color(),
             tab_line_width: default_tab_line_width(),
+            tab_line_dash: default_tab_line_dash(),
+
             hidden_line_angle: default_hidden_line_angle(),
             show_self_promotion: true,
             show_page_number: true,
@@ -2163,6 +2194,7 @@ impl<'de> Deserialize<'de> for LineConfig {
         Ok(LineConfig {
             thick: d.thick,
             color: Color::new(d.r, d.g, d.b, d.a),
+            dashes: vec![1.0], //TODO do lineconfigs even get saved?
         })
     }
 }

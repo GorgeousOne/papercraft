@@ -22,7 +22,7 @@ uniform! {
         pub tex: i32,
         pub texturize: i32,
         pub notex_color: Rgba,
-        pub dash_arrays: [f32; 16],
+        pub dash_arrays: [f32; 60],
     }
     pub struct UniformQuad {
         pub color: Rgba,
@@ -70,7 +70,7 @@ attrib! {
         pub pos_2d: Vector2,
         pub color: Rgba,
         pub line_length: f32,
-        pub dash_idx: i8,
+        pub dash_idx: i32,
     }
     #[derive(Copy, Clone, Debug)]
     #[repr(C)]

@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     sync::{Condvar, Mutex},
     thread,
 };
@@ -7,6 +8,7 @@ use crate::semaphore::Semaphore;
 
 use super::*;
 use anyhow::Result;
+use ui::PatternKind;
 
 fn file_name_for_page(file_name: &Path, page: u32) -> PathBuf {
     if page == 0 {
@@ -869,11 +871,27 @@ impl GlobalContext {
                     tex: 0,
                     texturize,
                     notex_color: Rgba::new(1.0, 1.0, 1.0, 1.0),
-                    dash_arrays: [
-                        4.0, 2.0, 1.0, 2.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-                        0.0,
-                    ],
+                    dash_arrays: [0.0; 60],
                 };
+                let num_dash_kinds = 5;
+                let dash_len = 10;
+                for i in 0..num_dash_kinds {
+                    u.dash_arrays[i * dash_len] = 1.0;
+                }
+
+                let opts = self.data.papercraft().options();
+                let mut dashes_map = HashMap::new(); //<PatternKind, Vec<32f>>
+                dashes_map.insert(PatternKind::Solid, vec![999.0]);
+                dashes_map.insert(PatternKind::Margin, vec![10.0, 10.0]);
+                dashes_map.insert(PatternKind::Cut, opts.cut_line_dash.clone());
+                dashes_map.insert(PatternKind::FoldMountain, opts.fold_line_dash.clone());
+                dashes_map.insert(PatternKind::FoldValley, opts.fold_line_dash.clone());
+                dashes_map.insert(PatternKind::FlapHidden, vec![10.0, 10.0]);
+                for (kind, dash) in dashes_map {
+                    for i in 0..dash.len() {
+                        u.dash_arrays[(kind.idx() as usize) * 10 + i] = dash[i];
+                    }
+                }
 
                 // Draw the texts
                 if let Some(font_atlas) = font_atlas.as_ref()

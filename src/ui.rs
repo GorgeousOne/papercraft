@@ -346,6 +346,24 @@ pub enum EdgeDrawKind {
     Valley,
 }
 
+// Identifier to differentiate which dash pattern a line2d is rendered with
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(i32)]
+pub enum PatternKind {
+    Solid,
+    Margin,
+    Cut,
+    FoldMountain,
+    FoldValley,
+    FlapHidden,
+}
+
+impl PatternKind {
+    pub fn idx(self) -> i32 {
+        self as i32
+    }
+}
+
 pub struct PaperDrawFaceArgs {
     vertices: Vec<MVertex2D>,
     vertices_edge_cut: Vec<Line2D>,
@@ -846,11 +864,10 @@ impl PapercraftContext {
                         let line_2d = Line2D {
                             p0: pos0 - vn,
                             p1: pos1 + vn,
-                            dash0: 0.0,
-                            dash1: if crease_kind == EdgeDrawKind::Valley {
-                                v_len * (1.0 + 2.0 * f)
+                            pattern: if crease_kind == EdgeDrawKind::Valley {
+                                PatternKind::FoldValley
                             } else {
-                                0.0
+                                PatternKind::FoldMountain
                             },
                             width_left,
                             width_right,
@@ -863,11 +880,10 @@ impl PapercraftContext {
                         let line_a = Line2D {
                             p0: pos0 - vn_a,
                             p1: pos0 + vn_b,
-                            dash0: 0.0,
-                            dash1: if crease_kind == EdgeDrawKind::Valley {
-                                v_len * (f_a + f_b)
+                            pattern: if crease_kind == EdgeDrawKind::Valley {
+                                PatternKind::FoldValley
                             } else {
-                                0.0
+                                PatternKind::FoldMountain
                             },
                             width_left,
                             width_right,
@@ -875,8 +891,7 @@ impl PapercraftContext {
                         let line_b = Line2D {
                             p0: pos1 - vn_b,
                             p1: pos1 + vn_a,
-                            dash0: 0.0,
-                            dash1: line_a.dash1,
+                            pattern: line_a.pattern,
                             width_left,
                             width_right,
                         };
@@ -889,20 +904,23 @@ impl PapercraftContext {
                 // Weird cuts are drawn differently:
                 // * cuts with hidden flaps
                 // * rims
-                let line_dash = if edge_status == EdgeStatus::Cut(FlapSide::Hidden) {
-                    5.0
-                } else {
-                    0.0
-                };
-                let mut line = Line2D {
+                //TODO let line_dash = if edge_status == EdgeStatus::Cut(FlapSide::Hidden) {
+                //     5.0
+                // } else {
+                //     0.0
+                // };
+                let line = Line2D {
                     p0: pos0,
                     p1: pos1,
-                    dash0: 0.0,
-                    dash1: 0.0,
+                    pattern: if edge_status == EdgeStatus::Cut(FlapSide::Hidden) {
+                        PatternKind::FlapHidden
+                    } else {
+                        PatternKind::Solid
+                    },
                     width_left,
                     width_right,
                 };
-                line.set_dash(line_dash);
+                // line.pattern = set_dash(line_dash);
                 args.vertices_edge_cut.push(line);
 
                 if let Some(cut_info) = extra.cut_info.as_mut() {
@@ -943,24 +961,22 @@ impl PapercraftContext {
                         let mut line_0 = Line2D {
                             p0: points[0],
                             p1: points[1],
-                            dash0: 0.0,
-                            dash1: 0.0,
+                            pattern: PatternKind::Solid,
                             width_left: options.tab_line_width,
                             width_right: 0.0,
                         };
                         let mut line_1 = Line2D {
                             p0: points[1],
                             p1: points[2],
-                            dash0: 0.0,
-                            dash1: 0.0,
+                            pattern: PatternKind::Solid,
                             width_left: options.tab_line_width,
                             width_right: 0.0,
                         };
                         // Weird flaps are drawn differently:
                         // * forced flap in a rim
                         if edge.faces().1.is_none() {
-                            line_0.set_dash(5.0);
-                            line_1.set_dash(5.0);
+                            line_0.pattern = PatternKind::FlapHidden; //TODO set_dash(5.0);
+                            line_1.pattern = PatternKind::FlapHidden; //TODO set_dash(5.0);
                         }
                         args.vertices_flap_edge.push(line_0);
                         args.vertices_flap_edge.push(line_1);
@@ -974,31 +990,28 @@ impl PapercraftContext {
                         let mut line_0 = Line2D {
                             p0: points[0],
                             p1: points[1],
-                            dash0: 0.0,
-                            dash1: 0.0,
+                            pattern: PatternKind::Solid,
                             width_left: options.tab_line_width,
                             width_right: 0.0,
                         };
                         let mut line_1 = Line2D {
                             p0: points[1],
                             p1: points[2],
-                            dash0: 0.0,
-                            dash1: 0.0,
+                            pattern: PatternKind::Solid,
                             width_left: options.tab_line_width,
                             width_right: 0.0,
                         };
                         let mut line_2 = Line2D {
                             p0: points[2],
                             p1: points[3],
-                            dash0: 0.0,
-                            dash1: 0.0,
+                            pattern: PatternKind::Solid,
                             width_left: options.tab_line_width,
                             width_right: 0.0,
                         };
                         if edge.faces().1.is_none() {
-                            line_0.set_dash(5.0);
-                            line_1.set_dash(5.0);
-                            line_2.set_dash(5.0);
+                            line_0.pattern = PatternKind::FlapHidden; //set_dash(5.0);
+                            line_1.pattern = PatternKind::FlapHidden; //set_dash(5.0);
+                            line_2.pattern = PatternKind::FlapHidden; //set_dash(5.0);
                         }
                         args.vertices_flap_edge.push(line_0);
                         args.vertices_flap_edge.push(line_1);
@@ -1352,32 +1365,32 @@ impl PapercraftContext {
             margin_vertices.push(Line2D {
                 p0: mpos_0,
                 p1: mpos_1,
-                dash0: 0.0,
-                dash1: page_size.y / 10.0,
+                pattern: PatternKind::Margin,
+                // dash1: page_size.y / 10.0,
                 width_left: margin_line_width,
                 width_right: 0.0,
             });
             margin_vertices.push(Line2D {
                 p0: mpos_1,
                 p1: mpos_2,
-                dash0: 0.0,
-                dash1: page_size.x / 10.0,
+                pattern: PatternKind::Margin,
+                // dash1: page_size.x / 10.0,
                 width_left: margin_line_width,
                 width_right: 0.0,
             });
             margin_vertices.push(Line2D {
                 p0: mpos_2,
                 p1: mpos_3,
-                dash0: 0.0,
-                dash1: page_size.y / 10.0,
+                pattern: PatternKind::Margin,
+                // dash1: page_size.y / 10.0,
                 width_left: margin_line_width,
                 width_right: 0.0,
             });
             margin_vertices.push(Line2D {
                 p0: mpos_3,
                 p1: mpos_0,
-                dash0: 0.0,
-                dash1: page_size.x / 10.0,
+                pattern: PatternKind::Margin,
+                // dash1: page_size.x / 10.0,
                 width_left: margin_line_width,
                 width_right: 0.0,
             });
@@ -1580,8 +1593,7 @@ impl PapercraftContext {
                 edge_sel_2d.push(Line2D {
                     p0: v0.pos_2d,
                     p1: v1.pos_2d,
-                    dash0: 0.0,
-                    dash1: 0.0,
+                    pattern: PatternKind::Solid,
                     width_left: line_width,
                     width_right: line_width,
                 });
@@ -1590,25 +1602,23 @@ impl PapercraftContext {
                     edge_sel_2d.push(Line2D {
                         p0: vb0.pos_2d,
                         p1: vb1.pos_2d,
-                        dash0: 0.0,
-                        dash1: 0.0,
+                        pattern: PatternKind::Solid,
                         width_left: line_width,
                         width_right: line_width,
                     });
                     let mut link_line = Line2D {
                         p0: (edge_sel_2d[idx_2d].p0 + edge_sel_2d[idx_2d].p1) / 2.0,
                         p1: (edge_sel_2d[idx_2d + 1].p0 + edge_sel_2d[idx_2d + 1].p1) / 2.0,
-                        dash0: 0.0,
-                        dash1: 0.0,
+                        pattern: PatternKind::Solid,
                         width_left: line_width,
                         width_right: line_width,
                     };
-                    link_line.dash1 = link_line.p0.distance(link_line.p1);
+                    link_line.pattern = PatternKind::Solid; //TODo dash1 = link_line.p0.distance(link_line.p1);
                     edge_sel_2d.push(link_line);
                 } else {
                     // If there is no face_b it is a rim, highlight it specially
                     // This line_dash will create a 4.5 repetition pattern (- - - -)
-                    edge_sel_2d[idx_2d].set_dash(5.0);
+                    edge_sel_2d[idx_2d].pattern = PatternKind::FlapHidden; //TODO
                 }
             }
             build_vertices_for_lines_2d(
@@ -3003,22 +3013,11 @@ impl std::ops::DerefMut for FlapVertices {
 struct Line2D {
     pub p0: Vector2,
     pub p1: Vector2,
-    pub dash0: f32,
-    pub dash1: f32,
+    pub pattern: PatternKind,
     pub width_left: f32,
     pub width_right: f32,
 }
 
-impl Line2D {
-    fn set_dash(&mut self, size: f32) {
-        if size == 0.0 {
-            self.dash1 = self.dash0;
-        } else {
-            let line_dash = (self.p0.distance(self.p1) / size).round() + 0.5;
-            self.dash1 = self.dash0 + line_dash;
-        }
-    }
-}
 // Given a list of lines build a triangle-strip geometry
 fn build_vertices_for_lines_2d<'a, LINES>(vs: &mut Vec<MVertex2DLine>, lines: LINES, color: Rgba)
 where
@@ -3046,25 +3045,25 @@ where
             pos_2d: p0 - n * line.width_left,
             color,
             line_length: 0.0,
-            dash_idx: 1,
+            dash_idx: line.pattern.idx(),
         };
         let v1 = MVertex2DLine {
             pos_2d: p0 + n * line.width_right,
             color,
             line_length: 0.0,
-            dash_idx: 1,
+            dash_idx: line.pattern.idx(),
         };
         let v2 = MVertex2DLine {
             pos_2d: p1 + n * line.width_right,
             color,
             line_length: dist,
-            dash_idx: 1,
+            dash_idx: line.pattern.idx(),
         };
         let v3 = MVertex2DLine {
             pos_2d: p1 - n * line.width_left,
             color,
             line_length: dist,
-            dash_idx: 1,
+            dash_idx: line.pattern.idx(),
         };
         //add quad vertices indexed as triangles
         vs.extend_from_slice(&[v0, v1, v2, v0, v2, v3]);

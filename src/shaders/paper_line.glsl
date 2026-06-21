@@ -1,7 +1,7 @@
 #version 140
 
 uniform mat3 m;
-uniform float dash_arrays[16];
+uniform float dash_arrays[60];
 
 in vec2 pos_2d;
 in vec4 color;
@@ -15,24 +15,26 @@ flat out int v_dash_idx;
 void main(void) {
     v_line_length = line_length;
     v_color = color;
+    v_dash_idx = 5; //dash_idx;
     gl_Position = vec4((m * vec3(pos_2d, 1.0)).xy, 0.0, 1.0);
 }
 
 ###
 
 #version 140
-uniform float dash_arrays[16];
+uniform float dash_arrays[60];
 in vec4 v_color;
 in float v_line_length;
 flat in int v_dash_idx;
 out vec4 out_frag_color;
 
 void main(void) {
-    float alpha = 1.0; //1.0 - step(0.5, mod(v_line_length, 1.0));
-    float remainder = v_line_length;
+    float alpha = 1.0;
+    int dash_off = v_dash_idx * 10;
     while (remainder > 0) {
-        for (int i = 0; i < 4; ++i) {
-            remainder -= dash_arrays[v_dash_idx*4 + i];
+        for (int i = 0; i < 10; ++i) {
+            remainder -= dash_arrays[dash_off + i];
+
             if (remainder > 0) {
                 alpha = 1.0 - alpha;
             } else {

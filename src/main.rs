@@ -19,6 +19,7 @@ use easy_imgui_window::{
 };
 use image::{EncodableLayout, GenericImage, GenericImageView, Pixel};
 use std::{
+    collections::HashMap,
     f32,
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -1445,6 +1446,7 @@ impl GlobalContext {
                                 let mut fold_line = LineConfig {
                                     thick: options.fold_line_width,
                                     color: options.fold_line_color.0,
+                                    dashes: vec![4.0, 2.0],
                                 };
                                 build_line_config(
                                     ui,
@@ -1475,6 +1477,7 @@ impl GlobalContext {
                                 let mut cut_line = LineConfig {
                                     thick: options.cut_line_width,
                                     color: options.cut_line_color.0,
+                                    dashes: vec![1.0],
                                 };
                                 build_line_config(
                                     ui,
@@ -1492,6 +1495,7 @@ impl GlobalContext {
                                 let mut tab_line = LineConfig {
                                     thick: options.tab_line_width,
                                     color: options.tab_line_color.0,
+                                    dashes: vec![8.0, 4.0],
                                 };
                                 build_line_config(
                                     ui,
@@ -2897,10 +2901,24 @@ impl GlobalContext {
             tex: 0,
             texturize: 0,
             notex_color: Rgba::new(0.75, 0.75, 0.75, 1.0),
-            dash_arrays: [
-                4.0, 2.0, 1.0, 2.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-            ],
+            dash_arrays: [0.0; 60],
         };
+        let opts = self.data.papercraft().options();
+        let mut dashes_map = HashMap::new(); //<PatternKind, Vec<32f>>
+        dashes_map.insert(PatternKind::Solid, vec![9999.0]);
+        dashes_map.insert(PatternKind::Margin, vec![10.0, 10.0]);
+        dashes_map.insert(PatternKind::Cut, opts.cut_line_dash.clone());
+        dashes_map.insert(PatternKind::FoldMountain, opts.fold_line_dash.clone());
+        dashes_map.insert(PatternKind::FoldValley, opts.fold_line_dash.clone());
+        dashes_map.insert(PatternKind::FlapHidden, vec![10.0, 10.0]);
+
+        for (kind, dash) in dashes_map {
+            println!("{} {:?} {:?}", kind.idx(), kind, dash);
+            for i in 0..dash.len() {
+                u.dash_arrays[(kind.idx() as usize) * 10 + i] = dash[i];
+            }
+        }
+        println!("{:?}", u.dash_arrays);
 
         unsafe {
             if self.data.ui.draw_paper {
@@ -3580,6 +3598,7 @@ fn same_line_align(ui: &Ui, start: f32, x: f32) {
     ui.set_cursor_screen_pos(vec2(p1.x.max(start + x), p1.y));
 }
 
+// builds a color picker ui input
 fn build_color(
     ui: &Ui,
     color: &mut Color,
@@ -3597,6 +3616,7 @@ fn build_color(
         .build();
 }
 
+// builds a decimal ui input with label, precision, unit label
 fn build_length(
     ui: &Ui,
     value: &mut f32,
